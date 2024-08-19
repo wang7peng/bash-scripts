@@ -10,9 +10,22 @@ set -u
 ####################################################
 
 # ---------- ------- version conf ------- ----------
-glib=2.81.0  # must 2.76+
+glib=2.81.2  # must 2.76+
 gtk4=4.15.3
 # ---------- ------- ------------ ------- ----------
+
+# python c
+check_env() {
+  python3 --version 1> /dev/null
+  [ $? -eq 127 ] && exit
+
+  local v=$(python3 --version | awk -F '.' {'print $2'})
+  sudo apt install -y python3.$v-venv
+
+  gcc --version 1> /dev/null
+  if [ $? -eq 127 ]; then echo "Abort."; exit
+  fi
+}
 
 # tools for building: meson, ninja, cmake
 check_tools() {
@@ -23,11 +36,6 @@ check_tools() {
 
   pkg-config --version 1> /dev/null
   [ $? -eq 127 ] && sudo apt install -y pkg-config
-
-  gcc --version 1> /dev/null
-  if [ $? -eq 127 ]; then
-    echo "Abort."; deactivate; exit
-  fi
 }
 
 # way A
@@ -93,22 +101,30 @@ addenv2path() {
 }
 
 # ---------- ---------- ---------- ---------- ----------
-python3 --version 1> /dev/null
-[ $? -eq 127 ] && exit
+if [ -d ~/Desktop ]; then cd ~/Desktop; else cd ~/桌面
+fi
 
-gtk4-launch --version 2> /dev/null
-if [ $? -eq 127 ]; then
-    echo "start install gtk-$gtk4..."
-else
-  if [ `gtk4-launch --version` == $gtk4 ]; then
+[ $# -eq 1 ] && gtk4=$1
+
+gtk4-launch --version 1>/dev/null 2>&1
+if [ $? -ne 127 ]; then
+  vCurr=`gtk4-launch --version`
+  if [ ${vCurr//./} -ge ${gtk4//./} ]; then
     echo "you may already have GTK installed on this system."
     gtk4-demo
-    exit
+  else
+    op=0
+    read -p "update gtk -> $gtk4? (default not) [Y/n] " op
+    case $op in
+      Y | y | 1) echo "start install gtk-$gtk4..."
+        ;;
+      *) echo "not update."; exit
+    esac
   fi
 fi
 
 # ---------- ---------- ---------- ---------- ----------
-cd ~/Desktop
+check_env
 
 # download_repo $gtk4
 download_pkg $gtk4
