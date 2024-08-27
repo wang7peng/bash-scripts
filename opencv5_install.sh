@@ -40,7 +40,7 @@ download_repo() {
     if [ -f /opt/$reponame-$v.zip ]; then
       sudo unzip -q /opt/$reponame-$v.zip -d .
     else
-      sudo git clone --branch $v --depth 1 \
+      sudo env PATH=$PATH git clone --branch $v --depth 1 \
         https://github.com/opencv/$reponame.git $reponame-$v
       git config --add safe.directory `pwd`/$reponame
     fi

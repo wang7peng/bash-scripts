@@ -27,11 +27,13 @@ download_repo() {
   local v=main
   [ $# -eq 1 ] && v=$1
 
+  test -d SDL && return
   git --version 1> /dev/null
   [ $? -eq 127 ] && sudo apt install -y git
 
-  sudo git clone --branch $v --depth 1 --single-branch \
-    https://github.com/libsdl-org/SDL.git
+  repo=https://github.com/libsdl-org/SDL.git
+  sudo env PATH=$PATH \
+    git clone --branch $v --depth 1 --single-branch $repo
 }
 
 # module need
