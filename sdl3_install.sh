@@ -55,13 +55,12 @@ install_dependency() {
 # usage:
 # export PKG_CONFIG_PATH=/usr/local/etc/sdl/lib/pkgconfig
 addenv2path() {
-  if [ $(grep 'sdl/lib' ~/.bashrc | wc -l) -eq 0 ]; then
-    echo "export PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$prefix/lib/pkgconfig" | \
-      sudo tee -a ~/.bashrc
+  local f=$HOME/.bashrc
+  local pc=$prefix/lib/pkgconfig
 
-    \. ~/.bashrc
-    echo "open a new terminal, run this script again!"
-    return
+  if [ $(grep -cn "$pc" $f) -eq 0 ]; then
+    echo "export PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$pc" | sudo tee -a $f
+    \. $f
   fi
 
   # test
@@ -71,7 +70,12 @@ addenv2path() {
 }
 
 # ---------- ---------- ---------- ---------- ----------
-cd ~/Desktop
+pkg-config --modversion sdl3 2> /dev/null
+test $? -ne 1 && exit
+
+if test -d ~/Desktop; then cd ~/Desktop; else
+  cd $HOME
+fi
 
 # step1 start pip environment
 python3 -m venv env4cmake
