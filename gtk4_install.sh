@@ -12,6 +12,8 @@ set -u
 # ---------- ------- version conf ------- ----------
 glib=2.81.2  # must 2.76+
 gtk4=4.15.3
+
+installdir=/usr/local/etc/gtk
 # ---------- ------- ------------ ------- ----------
 
 # python c
@@ -64,6 +66,24 @@ download_repo() {
   sudo git clone --branch $v --depth 1 $addr
 }
 
+# setup PATH, LD_LABRARY_PATH, PKG_CONFIG_PATH
+addenv2path() {
+  local cfg=$HOME/.bashrc
+
+  # export PATH=/usr/local/etc/gtk/bin:$PATH
+  if [ $(grep -cn "$installdir/bin" $cfg) -eq 0 ]; then
+    echo "export PATH=$installdir/bin:\$PATH" >> $cfg
+  fi
+
+  pc=$installdir/lib/x86_64-linux-gnu/pkgconfig
+  if cat $cfg | grep $installdir/lib/x86_64-linux-gnu; then
+    echo "export LD_LIBRARY_PATH=$installdir/lib/x86_64-linux-gnu/" >> $cfg
+    echo "export PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$pc" | sudo tee -a $cfg
+  fi
+  export LDFLAGS="-L$installdir/lib"
+  \. $cfg
+}
+
 # default v2.74 not high enough, need v2.76+
 install_glib() {
   local mirror=https://mirrors.nju.edu.cn/gnome
@@ -87,21 +107,15 @@ install_glib() {
   cd $builddir
   meson compile
   meson install # input y if exist interactive
+  sudo ldconfig
 
-  sudo ln -sf -v /usr/local/etc/gtk/bin/* /usr/local/bin
+  addenv2path
   cd ../..
 }
 
-# PATH LD_LABRARY_PATH
-addenv2path() {
-  # export PATH=/usr/local/etc/gtk/bin:$PATH
-  echo "export PATH=/usr/local/etc/gtk/bin:\$PATH" >> ~/.bashrc
-  echo "export LD_LIBRARY_PATH=/usr/local/etc/gtk/lib/x86_64-linux-gnu/" >> ~/.bashrc
-  \. ~/.bashrc
-}
-
 # ---------- ---------- ---------- ---------- ----------
-if [ -d ~/Desktop ]; then cd ~/Desktop; else cd ~/桌面
+if [ -d ~/Desktop ]; then cd ~/Desktop; else
+  cd $HOME # 不能是"桌面"，编译时路径不能有中文
 fi
 
 [ $# -eq 1 ] && gtk4=$1
@@ -135,7 +149,7 @@ python3 -m venv ./env4meson
 check_tools
 
 # step2. subproject
-[ `glib-compile-resources --version` == $glib ] && install_glib $glib
+[ `glib-compile-resources --version` != $glib ] && install_glib $glib
 
 fribidi --version 1> /dev/null
 [ $? -eq 127 ] && sudo apt install -y libfribidi-dev
