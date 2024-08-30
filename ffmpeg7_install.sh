@@ -17,6 +17,12 @@ check_env() {
   if [ $? -eq 127 ]; then echo "Abort."; exit
   fi
 
+  # if in centOS
+  if cat /proc/version | grep -q -E -i "red hat"; then
+    sudo yum install -y pkgconfig yasm
+    return
+  fi
+
   yasm --version 1> /dev/null
   [ $? -eq 127 ] && sudo apt install -y yasm
 
@@ -46,7 +52,7 @@ addenv2path() {
   linkdir=/usr/local/bin
   [ -L $linkdir/ffmpeg ] && sudo rm $linkdir/ffmpeg 
   [ -L $linkdir/ffprobe ] && sudo rm $linkdir/ffprobe
-  sudo ln -s $installdir/bin/* /usr/local/bin
+  sudo ln -s -v $installdir/bin/* $linkdir
 
   # pkg-config
   local pc_ffmpeg=$installdir/lib/pkgconfig
@@ -75,14 +81,16 @@ main() {
 }
 
 # ---------- main ----------
-cd ~/Desktop
+if [ -d ~/Desktop ]; then cd ~/Desktop; else
+  cd $HOME
+fi
 
 ffmpeg -version 2> /dev/null
 if [ $? -ne 127 ]; then
   op=0
   read -p "update version -> $ffmpeg? (default not) [Y/n] " op
   case $op in
-    Y | y | 1) main
+    Y | y | 1)
       ;;
     *) echo -n "not update, check pkg config: "
       pkg-config --cflags libavcodec
@@ -90,5 +98,6 @@ if [ $? -ne 127 ]; then
   esac
 fi
 
+main
 # test when install finished
 ffmpeg -version
