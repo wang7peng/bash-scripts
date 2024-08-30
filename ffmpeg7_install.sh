@@ -50,9 +50,10 @@ addenv2path() {
 
   # link exe {ffmpeg ffprobe} to $PATH
   linkdir=/usr/local/bin
-  [ -L $linkdir/ffmpeg ] && sudo rm $linkdir/ffmpeg 
-  [ -L $linkdir/ffprobe ] && sudo rm $linkdir/ffprobe
-  sudo ln -s -v $installdir/bin/* $linkdir
+  sudo ln -sf -v $installdir/bin/ff* $linkdir
+  # check PATH exist it and it is sort in front of /usr/bin
+  test $(echo $PATH | tr ':' '\n' | grep -cn $linkdir) -eq 0 &&
+    echo "export PATH=$linkdir:\$PATH" | sudo tee -a ~/.bashrc
 
   # pkg-config
   local pc_ffmpeg=$installdir/lib/pkgconfig
